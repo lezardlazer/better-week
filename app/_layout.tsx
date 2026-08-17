@@ -1,9 +1,11 @@
 import '../global.css';
 
 import { useEffect, useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LoadingState } from '../components/LoadingState';
 import { supabase } from '../lib/supabase/client';
@@ -38,6 +40,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <Slot />
         <StatusBar style="auto" />
+        {Platform.OS === 'web' ? <Analytics /> : null}
       </QueryClientProvider>
     </GestureHandlerRootView>
   );
