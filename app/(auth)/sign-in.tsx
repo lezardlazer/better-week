@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 import { z } from 'zod';
 import { FormField } from '../../components/FormField';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
 import { NeumorphicSurface } from '../../components/NeumorphicSurface';
 import { supabase } from '../../lib/supabase/client';
 import { colors, spacing, typography } from '../../theme/tokens';
@@ -60,6 +61,14 @@ export default function SignInScreen() {
         <Link href="/sign-up" style={{ textAlign: 'center', color: colors.muted }}>
           No account yet? Create one
         </Link>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.1)' }} />
+          <Text style={{ color: colors.muted, fontSize: 12 }}>OR</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.1)' }} />
+        </View>
+
+        <GoogleSignInButton />
       </View>
     </KeyboardAvoidingView>
   );
