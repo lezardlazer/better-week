@@ -131,6 +131,7 @@ export type Database = {
         Returns: {
           habit_id: string;
           habit_name: string;
+          habit_type: 'to_do' | 'to_avoid';
           target_for_week: number;
           completed_dates: string[];
         }[];

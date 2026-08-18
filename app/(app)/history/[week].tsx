@@ -23,8 +23,12 @@ export default function WeekDetailScreen() {
 
   const records = weekDetailQuery.data ?? [];
   const weekDays = getWeekDays(week);
-  const doneCount = records.reduce((sum, r) => sum + r.completed_dates.length, 0);
-  const plannedCount = records.reduce((sum, r) => sum + r.target_for_week, 0);
+  const doneCount = records.reduce((sum, r) => {
+    return r.habit_type === 'to_avoid' ? sum - r.completed_dates.length : sum + r.completed_dates.length;
+  }, 0);
+  const plannedCount = records.reduce((sum, r) => {
+    return r.habit_type === 'to_avoid' ? sum : sum + r.target_for_week;
+  }, 0);
   const percent = plannedCount > 0 ? doneCount / plannedCount : 0;
 
   return (

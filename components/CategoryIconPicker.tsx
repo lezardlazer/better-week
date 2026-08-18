@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { NeumorphicSurface } from './NeumorphicSurface';
 import { colors, spacing, typography } from '../theme/tokens';
@@ -22,6 +22,17 @@ export function CategoryIconPicker({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState<string>(CATEGORY_ICON_CHOICES[0]);
+
+  // The modal component stays mounted (only `visible` toggles), so its own
+  // state would otherwise survive a close — reopening later straight into
+  // whatever sub-screen it was last left on instead of the category list.
+  useEffect(() => {
+    if (!visible) {
+      setIsAddingNew(false);
+      setNewName('');
+      setNewIcon(CATEGORY_ICON_CHOICES[0]);
+    }
+  }, [visible]);
 
   const categories = categoriesQuery.data ?? [];
   const predefined = categories.filter((c) => c.is_predefined);
@@ -47,14 +58,24 @@ export function CategoryIconPicker({
             maxHeight: '80%',
           }}
         >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ ...typography.title, color: colors.ink }}>
-              {isAddingNew ? 'New category' : 'Choose a category'}
-            </Text>
-            <Pressable onPress={onClose}>
-              <Text style={{ color: colors.muted }}>Close</Text>
-            </Pressable>
-          </View>
+          {isAddingNew ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <Pressable onPress={() => setIsAddingNew(false)}>
+                <Text style={{ color: colors.bauhaus.blue }}>← Back</Text>
+              </Pressable>
+              <Text style={{ ...typography.title, color: colors.ink, flex: 1 }}>New category</Text>
+              <Pressable onPress={onClose}>
+                <Text style={{ color: colors.muted }}>Close</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ ...typography.title, color: colors.ink }}>Choose a category</Text>
+              <Pressable onPress={onClose}>
+                <Text style={{ color: colors.muted }}>Close</Text>
+              </Pressable>
+            </View>
+          )}
 
           <ScrollView style={{ marginTop: spacing.lg }} showsVerticalScrollIndicator={false}>
             {isAddingNew ? (

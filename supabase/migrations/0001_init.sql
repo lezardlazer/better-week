@@ -238,6 +238,9 @@ $$;
 -- habits cascade away, but archived ones still count toward their history).
 -- Unlike get_week_dashboard, this never creates rows — history is read-only.
 -- ---------------------------------------------------------------------------
+-- "To avoid" habits don't add to planned (their target is a max-not-to-exceed,
+-- not something to fulfill) and their completions subtract from completed
+-- instead of adding to it — a slip should read as regression, not progress.
 create or replace function list_past_weeks(p_before date)
 returns table (
   week_start_date date,
@@ -250,13 +253,19 @@ set search_path = public
 as $$
   select
     wr.week_start_date,
-    sum(wr.target_for_week)::bigint as planned,
-    count(hc.id)::bigint as completed
+    sum(case when h.habit_type = 'to_do' then wr.target_for_week else 0 end)::bigint as planned,
+    sum(
+      case when h.habit_type = 'to_do' then coalesce(hc.cnt, 0) else -coalesce(hc.cnt, 0) end
+    )::bigint as completed
   from weekly_records wr
-  left join habit_completions hc
-    on hc.habit_id = wr.habit_id
-    and hc.user_id = auth.uid()
-    and hc.completed_on between wr.week_start_date and wr.week_start_date + 6
+  join habits h on h.id = wr.habit_id
+  left join lateral (
+    select count(*) as cnt
+    from habit_completions
+    where habit_id = wr.habit_id
+      and user_id = auth.uid()
+      and completed_on between wr.week_start_date and wr.week_start_date + 6
+  ) hc on true
   where wr.user_id = auth.uid() and wr.week_start_date < p_before
   group by wr.week_start_date
   order by wr.week_start_date desc;
@@ -272,6 +281,7 @@ create or replace function get_week_detail(p_week_start date)
 returns table (
   habit_id uuid,
   habit_name text,
+  habit_type text,
   target_for_week smallint,
   completed_dates date[]
 )
@@ -282,6 +292,7 @@ as $$
   select
     wr.habit_id,
     h.name,
+    h.habit_type,
     wr.target_for_week,
     coalesce(
       array_agg(hc.completed_on order by hc.completed_on) filter (where hc.completed_on is not null),
@@ -294,7 +305,7 @@ as $$
     and hc.user_id = auth.uid()
     and hc.completed_on between p_week_start and p_week_start + 6
   where wr.user_id = auth.uid() and wr.week_start_date = p_week_start
-  group by wr.habit_id, h.name, wr.target_for_week
+  group by wr.habit_id, h.name, h.habit_type, wr.target_for_week
   order by h.name;
 $$;
 

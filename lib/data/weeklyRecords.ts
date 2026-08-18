@@ -45,7 +45,7 @@ export async function listPastWeeks(beforeISO: string): Promise<PastWeekSummary[
   return data ?? [];
 }
 
-export type WeekHabitDetail = WeekHabitRecord & { habit_name: string };
+export type WeekHabitDetail = WeekHabitRecord & { habit_name: string; habit_type: 'to_do' | 'to_avoid' };
 
 export async function getWeekDetail(weekStartISO: string): Promise<WeekHabitDetail[]> {
   const { data, error } = await supabase.rpc('get_week_detail', { p_week_start: weekStartISO });

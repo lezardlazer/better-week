@@ -47,9 +47,19 @@ export default function DashboardScreen() {
   // only count currently-active habits, so filter through the active set.
   const activeHabitIds = new Set(habits.map((h) => h.id));
   const activeRecords = (weekQuery.data ?? []).filter((r) => activeHabitIds.has(r.habit_id));
+  const habitTypeById = new Map(habits.map((h) => [h.id, h.habit_type]));
 
-  const doneCount = activeRecords.reduce((sum, r) => sum + r.completed_dates.length, 0);
-  const plannedCount = activeRecords.reduce((sum, r) => sum + r.target_for_week, 0);
+  // "To avoid" habits don't add to the weekly goal — checking one means a
+  // slip, so it subtracts from what's been done instead, and its target
+  // (a max-not-to-exceed, not something to fulfill) is excluded from planned.
+  const doneCount = activeRecords.reduce((sum, r) => {
+    const isAvoid = habitTypeById.get(r.habit_id) === 'to_avoid';
+    return isAvoid ? sum - r.completed_dates.length : sum + r.completed_dates.length;
+  }, 0);
+  const plannedCount = activeRecords.reduce((sum, r) => {
+    const isAvoid = habitTypeById.get(r.habit_id) === 'to_avoid';
+    return isAvoid ? sum : sum + r.target_for_week;
+  }, 0);
   const percent = plannedCount > 0 ? doneCount / plannedCount : 0;
 
   const gridHabits: GridHabit[] = habits.map((habit) => {

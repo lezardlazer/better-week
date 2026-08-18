@@ -15,7 +15,7 @@ export function WeekHeader({
   plannedCount: number;
   headerRight?: React.ReactNode;
 }) {
-  const clampedPercent = Math.min(percent, 1);
+  const clampedPercent = Math.max(0, Math.min(percent, 1));
 
   return (
     <View style={{ gap: spacing.xl }}>

@@ -33,7 +33,7 @@ export function WeekListItem({
           </Text>
         </View>
         <Text style={{ ...typography.display, fontSize: 22, color: colors.bauhaus.blue }}>
-          {Math.round(Math.min(percent, 1) * 100)}%
+          {Math.round(Math.max(0, Math.min(percent, 1)) * 100)}%
         </Text>
       </NeumorphicSurface>
     </Pressable>
