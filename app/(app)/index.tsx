@@ -10,19 +10,22 @@ import { WeekHeader } from '../../components/WeekHeader';
 import { supabase } from '../../lib/supabase/client';
 import { useCategories } from '../../lib/queries/useCategories';
 import { useCurrentWeek, useHabitStreaks, useToggleCompletion } from '../../lib/queries/useCurrentWeek';
+import { useWeekDetail } from '../../lib/queries/useHistory';
 import { useHabits } from '../../lib/queries/useHabits';
-import { formatWeekRange, getWeekDays, getWeekStartISO, todayISO } from '../../lib/week';
+import { addDaysToISO, formatWeekRange, getWeekDays, getWeekStartISO, todayISO } from '../../lib/week';
 import { colors, spacing } from '../../theme/tokens';
 
 export default function DashboardScreen() {
   const weekStartISO = getWeekStartISO();
   const weekDays = getWeekDays(weekStartISO);
   const today = todayISO();
+  const previousWeekStartISO = addDaysToISO(weekStartISO, -7);
 
   const habitsQuery = useHabits();
   const categoriesQuery = useCategories();
   const weekQuery = useCurrentWeek(weekStartISO);
   const streaksQuery = useHabitStreaks(weekStartISO);
+  const previousWeekQuery = useWeekDetail(previousWeekStartISO);
   const toggleCompletion = useToggleCompletion(weekStartISO);
 
   const isLoading =
@@ -41,6 +44,9 @@ export default function DashboardScreen() {
   const categoryById = new Map((categoriesQuery.data ?? []).map((c) => [c.id, c]));
   const recordByHabitId = new Map((weekQuery.data ?? []).map((r) => [r.habit_id, r]));
   const streakByHabitId = new Map((streaksQuery.data ?? []).map((s) => [s.habit_id, s.streak_weeks]));
+  const doneLastWeekByHabitId = new Map(
+    (previousWeekQuery.data ?? []).map((r) => [r.habit_id, r.completed_dates.length > 0])
+  );
 
   // weekQuery returns every weekly_records row for this week, including ones
   // belonging to habits archived after the row was created — totals must
@@ -69,12 +75,14 @@ export default function DashboardScreen() {
       id: habit.id,
       name: habit.name,
       habitType: habit.habit_type,
+      frequency: habit.frequency,
       categoryId: habit.category_id,
       categoryName: category?.name ?? '',
       categoryIcon: category?.icon ?? 'star',
       target: record?.target_for_week ?? habit.default_weekly_target,
       completedDates: record?.completed_dates ?? [],
       streakWeeks: streakByHabitId.get(habit.id) ?? 0,
+      doneLastWeek: doneLastWeekByHabitId.get(habit.id) ?? false,
     };
   });
 

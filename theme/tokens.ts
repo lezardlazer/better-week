@@ -18,6 +18,8 @@ export const colors = {
   },
   todayHighlight: 'rgba(51, 85, 216, 0.08)',
   completedHighlight: '#F6E9C9',
+  atRiskHighlight: 'rgba(216, 71, 59, 0.14)',
+  offCycleHighlight: 'rgba(20, 20, 22, 0.06)',
 } as const;
 
 export const spacing = {

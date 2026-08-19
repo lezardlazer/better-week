@@ -20,12 +20,17 @@ export type GridHabit = {
   id: string;
   name: string;
   habitType: 'to_do' | 'to_avoid';
+  frequency: 'weekly' | 'biweekly' | 'monthly';
   categoryId: string;
   categoryName: string;
   categoryIcon: string;
   target: number;
   completedDates: string[];
   streakWeeks: number;
+  /** Whether this habit already had a completion last week — only
+   * meaningful for biweekly habits, where doing it last week means this
+   * week is an "off" week. */
+  doneLastWeek: boolean;
 };
 
 type CategoryGroup = {
@@ -144,13 +149,21 @@ export function HabitsGrid({
                     onReorderEnd={(reordered) => reorderHabitsMutation.mutate(reordered.map((h) => h.id))}
                     renderItem={({ item: habit, index: habitIndex, isDragging: habitDragging, dragProps: habitDragProps }) => {
                       const isComplete = habit.completedDates.length >= habit.target;
+                      const isOffCycle = !isComplete && habit.frequency === 'biweekly' && habit.doneLastWeek;
+                      const isAtRisk = !isComplete && !isOffCycle && isHabitAtRisk(habit, weekDays, todayISO);
                       const isLast = habitIndex === item.habits.length - 1;
                       return (
                         <View
                           style={{
                             borderTopWidth: habitIndex > 0 ? 1 : 0,
                             borderTopColor: 'rgba(0,0,0,0.08)',
-                            backgroundColor: isComplete ? colors.completedHighlight : 'transparent',
+                            backgroundColor: isComplete
+                              ? colors.completedHighlight
+                              : isAtRisk
+                                ? colors.atRiskHighlight
+                                : isOffCycle
+                                  ? colors.offCycleHighlight
+                                  : 'transparent',
                             paddingHorizontal: spacing.lg,
                             paddingTop: ROW_VERTICAL_PADDING,
                             paddingBottom: isLast ? spacing.lg : ROW_VERTICAL_PADDING,
@@ -292,6 +305,21 @@ function GridRow({
       })}
     </View>
   );
+}
+
+/** True once the habit can no longer afford to skip a day: the remaining
+ * completions needed are greater than or equal to the days strictly after
+ * today, meaning today's slot is now mandatory to still hit the weekly
+ * target. Only applies to to_do habits — to_avoid habits have no such
+ * deadline. */
+function isHabitAtRisk(habit: GridHabit, weekDays: Date[], todayISO: string): boolean {
+  if (habit.habitType !== 'to_do') return false;
+
+  const remainingNeeded = habit.target - habit.completedDates.length;
+  if (remainingNeeded <= 0) return false;
+
+  const daysAfterToday = weekDays.filter((d) => toDateISO(d) > todayISO).length;
+  return remainingNeeded >= daysAfterToday;
 }
 
 function groupAndSortCategories(habits: GridHabit[], positions: Record<string, number>): CategoryGroup[] {
